@@ -9,7 +9,9 @@ import {
   ChevronDown, 
   ChevronUp, 
   CheckCircle2,
-  Box
+  Box,
+  BookOpen,
+  Eye
 } from 'lucide-react';
 import { LouverType, LouverSection } from '../types';
 import { 
@@ -20,6 +22,9 @@ import {
   STANDARD_LOUVER_WIDTH_MM,
   STANDARD_LOUVER_HEIGHT_MM
 } from '../utils/louverCalculator';
+import { LouverManualModal } from './LouverManualModal';
+import { LouverVisualizer } from './LouverVisualizer';
+
 
 interface LouverPanelCalculatorProps {
   initialTypes?: LouverType[];
@@ -44,6 +49,7 @@ export const LouverPanelCalculator: React.FC<LouverPanelCalculatorProps> = ({
   const [types, setTypes] = useState<LouverType[]>(
     initialTypes && initialTypes.length > 0 ? initialTypes : DEFAULT_LOUVER_TYPES
   );
+  const [showManualModal, setShowManualModal] = useState<boolean>(false);
 
   const [expandedTypes, setExpandedTypes] = useState<Record<string, boolean>>(() => {
     const initialMap: Record<string, boolean> = {};
@@ -182,6 +188,15 @@ export const LouverPanelCalculator: React.FC<LouverPanelCalculatorProps> = ({
         <div className="flex items-center gap-2">
           <button
             type="button"
+            onClick={() => setShowManualModal(true)}
+            className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl border border-slate-200 transition-colors"
+            title="Open Louver calculation manual"
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>Manual</span>
+          </button>
+          <button
+            type="button"
             onClick={resetAll}
             className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-xl transition-colors border border-rose-100"
           >
@@ -198,6 +213,7 @@ export const LouverPanelCalculator: React.FC<LouverPanelCalculatorProps> = ({
           </button>
         </div>
       </div>
+
 
       {/* 2-Column Main Layout: Louver Types & Sections Editor (Left) & Summary & Stock Cutting (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -614,6 +630,16 @@ export const LouverPanelCalculator: React.FC<LouverPanelCalculatorProps> = ({
           </div>
         </div>
       </div>
+
+      {/* 2D Wall Elevation Visualizer */}
+      <LouverVisualizer types={types} results={results} />
+
+      {/* Louver Manual Guide Modal */}
+      <LouverManualModal
+        isOpen={showManualModal}
+        onClose={() => setShowManualModal(false)}
+      />
     </div>
   );
 };
+

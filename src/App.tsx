@@ -260,11 +260,12 @@ export default function App() {
 
       {/* Footer */}
       <footer className="mt-8 py-4 text-center text-xs text-slate-500 border-t border-slate-200/80 w-full max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-        <p>Interior Quantity Calculators • 300 mm = 1 ft Standard Conversion</p>
+        <p>Livin Material Calculator • 300 mm = 1 ft Standard Conversion</p>
         <p className="text-[11px] text-slate-400">
           False Ceiling • Aluminium Strip • PVC Moulding • Louver Panels
         </p>
       </footer>
+
     </div>
   );
 }

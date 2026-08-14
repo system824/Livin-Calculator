@@ -9,7 +9,8 @@ import {
   Scissors, 
   Ruler, 
   Info,
-  Layers
+  Layers,
+  BookOpen
 } from 'lucide-react';
 import { AluminiumStripItem } from '../types';
 import { 
@@ -19,6 +20,7 @@ import {
   STOCK_BAR_LENGTH_MM,
   STOCK_BAR_LENGTH_FT
 } from '../utils/aluminiumCalculator';
+import { AluminiumManualModal } from './AluminiumManualModal';
 
 interface AluminiumStripCalculatorProps {
   initialItems?: AluminiumStripItem[];
@@ -45,6 +47,8 @@ export const AluminiumStripCalculator: React.FC<AluminiumStripCalculatorProps> =
   );
   const [stockLengthMm, setStockLengthMm] = useState<number>(STOCK_BAR_LENGTH_MM);
   const [copied, setCopied] = useState<boolean>(false);
+  const [showManualModal, setShowManualModal] = useState<boolean>(false);
+
 
   // Sync back to parent when items change
   const updateItems = (newItems: AluminiumStripItem[]) => {
@@ -138,7 +142,20 @@ ${results.stockBars.map((bar) => `Bar #${bar.barNumber} [Used: ${bar.usedLengthM
             Calculates the minimum full 10-foot stock strips required to achieve all design modules <strong>without intermediate joints</strong>.
           </p>
         </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowManualModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl border border-slate-200 transition-colors"
+            title="Open Aluminium Strip manual and wardrobe guide"
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>Manual</span>
+          </button>
+        </div>
       </div>
+
 
       {/* Main 2-Column Grid: Entries Left, Results Right */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -299,7 +316,7 @@ ${results.stockBars.map((bar) => `Bar #${bar.barNumber} [Used: ${bar.usedLengthM
               <div className="flex items-center gap-2">
                 <Layers className="w-4 h-4 text-emerald-600" />
                 <h3 className="text-sm font-bold text-slate-900">
-                  Procurement Summary
+                  Quantity summary
                 </h3>
               </div>
               <button
@@ -307,6 +324,7 @@ ${results.stockBars.map((bar) => `Bar #${bar.barNumber} [Used: ${bar.usedLengthM
                 onClick={copyToClipboard}
                 className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
               >
+
                 {copied ? (
                   <>
                     <Check className="w-3.5 h-3.5 text-emerald-600" />
@@ -467,6 +485,14 @@ ${results.stockBars.map((bar) => `Bar #${bar.barNumber} [Used: ${bar.usedLengthM
           </div>
         </div>
       </div>
+
+      {/* Aluminium Strip Manual Modal */}
+      <AluminiumManualModal
+        isOpen={showManualModal}
+        onClose={() => setShowManualModal(false)}
+        onLoadExample={(exampleItems) => updateItems(exampleItems)}
+      />
     </div>
   );
 };
+

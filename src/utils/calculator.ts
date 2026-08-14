@@ -243,32 +243,31 @@ export function calculateCeilingWithExtras(
     });
   });
 
-  // Cumulative Totals
-  const totalSurfaceAreaSqft = primaryBreakdown.surfaceAreaSqft + 
-    extrasBreakdown.reduce((sum, item) => sum + item.surfaceAreaSqft, 0);
+  // Cumulative Totals calculated with high precision
+  const rawTotalSurfaceArea = primarySurfaceSqft + extrasBreakdown.reduce((sum, item) => sum + item.surfaceAreaSqft, 0);
+  const rawTotalCove = primaryCoveRft + extrasBreakdown.reduce((sum, item) => sum + item.coveRft, 0);
+  const rawTotalEdge = primaryEdgeSqft + extrasBreakdown.reduce((sum, item) => sum + item.edgeSqft, 0);
+  const rawTotalFc = rawTotalSurfaceArea + rawTotalEdge;
 
-  const totalCoveRft = primaryBreakdown.coveRft + 
-    extrasBreakdown.reduce((sum, item) => sum + item.coveRft, 0);
-
-  const totalEdgeSqft = primaryBreakdown.edgeSqft + 
-    extrasBreakdown.reduce((sum, item) => sum + item.edgeSqft, 0);
-
-  const totalFcSqft = primaryBreakdown.fcSqft + 
-    extrasBreakdown.reduce((sum, item) => sum + item.fcSqft, 0);
+  const totalSurfaceAreaSqft = Number(rawTotalSurfaceArea.toFixed(2));
+  const totalCoveRft = Number(rawTotalCove.toFixed(2));
+  const totalEdgeSqft = Number(rawTotalEdge.toFixed(2));
+  const totalFcSqft = Number(rawTotalFc.toFixed(2));
 
   const totalStripLightRft = totalCoveRft;
-  // Electrical calculation: For every continuous strip light there is 1 adaptor required for every 15' (e.g. 35' peripheral = 3, 20' island = 2 => 3 + 2 = 5)
+  // Electrical calculation: For every continuous strip light there is 1 adaptor required for every 15'
   const totalAdaptors = primaryBreakdown.adaptors + 
     extrasBreakdown.reduce((sum, item) => sum + item.adaptors, 0);
 
   return {
-    totalSurfaceAreaSqft: Number(totalSurfaceAreaSqft.toFixed(2)),
-    totalCoveRft: Number(totalCoveRft.toFixed(2)),
-    totalEdgeSqft: Number(totalEdgeSqft.toFixed(2)),
-    totalFcSqft: Number(totalFcSqft.toFixed(2)),
-    totalStripLightRft: Number(totalStripLightRft.toFixed(2)),
+    totalSurfaceAreaSqft,
+    totalCoveRft,
+    totalEdgeSqft,
+    totalFcSqft,
+    totalStripLightRft,
     totalAdaptors,
     primaryBreakdown,
     extrasBreakdown,
   };
 }
+

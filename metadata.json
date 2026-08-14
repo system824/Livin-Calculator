@@ -1,6 +1,6 @@
 {
-  "name": "Interior Calculators",
-  "description": "Accurate interior quantity estimators including False Ceiling, Aluminium Strip, PVC Moulding, and Louver Panels with cross-section material optimization.",
+  "name": "Livin Material Calculator",
+  "description": "Comprehensive interior material estimation suite for False Ceiling, Aluminium Strip profiles, PVC Mouldings, and Louver Panels with zero-joint cutting schedules.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

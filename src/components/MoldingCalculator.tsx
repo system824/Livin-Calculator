@@ -10,7 +10,8 @@ import {
   Layers,
   Sparkles,
   Eye,
-  Sliders
+  Sliders,
+  BookOpen
 } from 'lucide-react';
 import { MoldingFrameItem, MoldingFrameType } from '../types';
 import { 
@@ -23,6 +24,8 @@ import {
   PVC_STOCK_BAR_LENGTH_FT,
   FIXED_WASTAGE_FACTOR
 } from '../utils/moldingCalculator';
+import { MoldingManualModal } from './MoldingManualModal';
+
 
 interface MoldingCalculatorProps {
   initialItems?: MoldingFrameItem[];
@@ -47,6 +50,7 @@ export const MoldingCalculator: React.FC<MoldingCalculatorProps> = ({
   const [items, setItems] = useState<MoldingFrameItem[]>(
     initialItems && initialItems.length > 0 ? initialItems : DEFAULT_MOLDING_ITEMS
   );
+  const [showManualModal, setShowManualModal] = useState<boolean>(false);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(
     (initialItems && initialItems[0]?.id) || DEFAULT_MOLDING_ITEMS[0].id
   );
@@ -127,6 +131,15 @@ export const MoldingCalculator: React.FC<MoldingCalculatorProps> = ({
         <div className="flex items-center gap-2">
           <button
             type="button"
+            onClick={() => setShowManualModal(true)}
+            className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl border border-slate-200 transition-colors"
+            title="Open Molding calculation manual"
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>Manual</span>
+          </button>
+          <button
+            type="button"
             onClick={resetAll}
             className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-xl transition-colors border border-rose-100"
           >
@@ -136,189 +149,9 @@ export const MoldingCalculator: React.FC<MoldingCalculatorProps> = ({
         </div>
       </div>
 
-      {/* Side-by-Side Visual Elevation Canvas Gallery */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-          <div className="flex items-center gap-2">
-            <Eye className="w-4 h-4 text-indigo-600" />
-            <h3 className="text-sm font-bold text-slate-900">
-              Designs Elevation Visualizer (Side-by-Side Gallery)
-            </h3>
-          </div>
-          <span className="text-xs text-slate-400 font-medium">
-            {items.length} Design {items.length === 1 ? 'Element' : 'Elements'} Configured
-          </span>
-        </div>
-
-        {/* Gallery of Designs side by side */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {items.map((item, index) => {
-            const isSelected = selectedItemId === item.id;
-            const w = item.widthMm || 0;
-            const h = item.heightMm || 0;
-            const outerProf = getProfileSizeById(item.outerProfileSizeId || 'size_1');
-            const innerProf = getProfileSizeById(item.innerProfileSizeId || 'size_2');
-            const singleProf = getProfileSizeById(item.profileSizeId || 'size_1');
-            const offset = item.innerOffsetMm || 75;
-
-            return (
-              <div
-                key={item.id}
-                onClick={() => setSelectedItemId(item.id)}
-                className={`p-4 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
-                  isSelected
-                    ? 'border-indigo-500 ring-2 ring-indigo-500/20 bg-indigo-50/10'
-                    : 'border-slate-200 bg-slate-50/50 hover:border-slate-300 hover:bg-slate-50'
-                }`}
-              >
-                {/* Card Header */}
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-lg bg-indigo-600 text-white text-xs font-bold flex items-center justify-center shadow-xs">
-                      {index + 1}
-                    </span>
-                    <div>
-                      <h4 className="text-xs font-bold text-slate-900 leading-tight">
-                        {item.label}
-                      </h4>
-                      <span className="text-[10px] font-medium text-slate-500">
-                        {item.type === 'DOUBLE_FRAME' && 'Double Box Frame'}
-                        {item.type === 'BOX_FRAME' && 'Single Box Frame'}
-                        {item.type === 'HORIZONTAL_SLAT' && 'Horizontal Slat/Batten'}
-                        {item.type === 'VERTICAL_SLAT' && 'Vertical Slat/Batten'}
-                        {item.type === 'CUSTOM_RUN' && 'Custom Linear Run'}
-                      </span>
-                    </div>
-                  </div>
-                  <span className="px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 text-[10px] font-bold">
-                    × {item.quantity} {item.quantity === 1 ? 'qty' : 'sets'}
-                  </span>
-                </div>
-
-                {/* Scaled 2D Elevation View for this Design */}
-                <div className="h-44 w-full bg-slate-900 rounded-lg p-3 relative flex items-center justify-center overflow-hidden shadow-inner my-2">
-                  {/* Subtle Grid Background */}
-                  <div 
-                    className="absolute inset-0 opacity-15"
-                    style={{
-                      backgroundImage: 'radial-gradient(#94a3b8 1px, transparent 1px)',
-                      backgroundSize: '12px 12px'
-                    }}
-                  />
-
-                  {/* Render Double Frame */}
-                  {item.type === 'DOUBLE_FRAME' && (
-                    <div className="relative flex items-center justify-center max-h-36 max-w-[85%]">
-                      {/* Outer Frame Box */}
-                      <div 
-                        className="border-2 border-amber-400 bg-amber-500/10 rounded-xs flex items-center justify-center p-3 shadow-md transition-all"
-                        style={{
-                          width: `${Math.min(180, Math.max(80, (w / 2000) * 160))}px`,
-                          height: `${Math.min(130, Math.max(60, (h / 2000) * 120))}px`,
-                        }}
-                      >
-                        {/* Inner Frame Box */}
-                        <div 
-                          className="w-full h-full border border-sky-300 bg-sky-400/20 rounded-xs flex items-center justify-center"
-                        >
-                          <span className="text-[9px] font-mono text-slate-300 font-semibold text-center leading-none px-1">
-                            {w} × {h}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Render Single Box Frame */}
-                  {item.type === 'BOX_FRAME' && (
-                    <div 
-                      className="border-2 border-indigo-400 bg-indigo-500/15 rounded-xs flex items-center justify-center shadow-md transition-all"
-                      style={{
-                        width: `${Math.min(180, Math.max(80, (w / 2000) * 160))}px`,
-                        height: `${Math.min(130, Math.max(60, (h / 2000) * 120))}px`,
-                      }}
-                    >
-                      <span className="text-[10px] font-mono text-slate-200 font-bold">
-                        {w} × {h} mm
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Render Horizontal Slat */}
-                  {item.type === 'HORIZONTAL_SLAT' && (
-                    <div className="w-full px-4 flex flex-col items-center gap-2">
-                      <div className="w-full h-3 bg-emerald-400 rounded-xs relative shadow flex items-center justify-center">
-                        {w > 2400 && (
-                          <div 
-                            className="absolute top-0 bottom-0 w-0.5 bg-rose-500" 
-                            style={{ left: `${(2400 / w) * 100}%` }}
-                            title="2400mm Joint Location"
-                          />
-                        )}
-                      </div>
-                      <span className="text-[10px] font-mono text-emerald-300 font-semibold">
-                        Length: {w || h} mm {w > 2400 && '(Jointed at 2400mm)'}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Render Vertical Slat */}
-                  {item.type === 'VERTICAL_SLAT' && (
-                    <div className="h-full py-2 flex flex-col items-center justify-center gap-1">
-                      <div className="w-3 h-28 bg-emerald-400 rounded-xs relative shadow flex items-center justify-center">
-                        {h > 2400 && (
-                          <div 
-                            className="absolute left-0 right-0 h-0.5 bg-rose-500" 
-                            style={{ top: `${(2400 / h) * 100}%` }}
-                            title="2400mm Joint Location"
-                          />
-                        )}
-                      </div>
-                      <span className="text-[10px] font-mono text-emerald-300 font-semibold">
-                        {h || w} mm
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Render Custom Run */}
-                  {item.type === 'CUSTOM_RUN' && (
-                    <div className="w-full px-4 flex flex-col items-center gap-2">
-                      <div className="w-full h-2.5 bg-purple-400 rounded-xs shadow" />
-                      <span className="text-[10px] font-mono text-purple-300 font-semibold">
-                        {w || h} mm Linear Run
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Profile Spec Badges */}
-                <div className="pt-2 flex flex-wrap gap-1.5 text-[10px]">
-                  {item.type === 'DOUBLE_FRAME' ? (
-                    <>
-                      <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-medium">
-                        Outer: {outerProf.name}
-                      </span>
-                      <span className="px-2 py-0.5 rounded bg-sky-50 text-sky-800 border border-sky-200 font-medium">
-                        Inner: {innerProf.name}
-                      </span>
-                      <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-mono">
-                        Gap: {offset}mm
-                      </span>
-                    </>
-                  ) : (
-                    <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-200 font-medium">
-                      Profile: {singleProf.name}
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
       {/* 2-Column Grid: Designs Inputs (Left) & Calculation Results (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
         {/* Left Column: Designs Editor (lg:col-span-7) */}
         <div className="lg:col-span-7 space-y-4">
           <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
@@ -741,6 +574,194 @@ export const MoldingCalculator: React.FC<MoldingCalculatorProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Side-by-Side Visual Elevation Canvas Gallery (Rearranged to Bottom) */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div className="flex items-center gap-2">
+            <Eye className="w-4 h-4 text-indigo-600" />
+            <h3 className="text-sm font-bold text-slate-900">
+              Designs Elevation Visualizer (Side-by-Side Gallery)
+            </h3>
+          </div>
+          <span className="text-xs text-slate-400 font-medium">
+            {items.length} Design {items.length === 1 ? 'Element' : 'Elements'} Configured
+          </span>
+        </div>
+
+        {/* Gallery of Designs side by side */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {items.map((item, index) => {
+            const isSelected = selectedItemId === item.id;
+            const w = item.widthMm || 0;
+            const h = item.heightMm || 0;
+            const outerProf = getProfileSizeById(item.outerProfileSizeId || 'w201');
+            const innerProf = getProfileSizeById(item.innerProfileSizeId || 'w101');
+            const singleProf = getProfileSizeById(item.profileSizeId || 'w201');
+            const offset = item.innerOffsetMm || 75;
+
+            return (
+              <div
+                key={item.id}
+                onClick={() => setSelectedItemId(item.id)}
+                className={`p-4 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
+                  isSelected
+                    ? 'border-indigo-500 ring-2 ring-indigo-500/20 bg-indigo-50/10'
+                    : 'border-slate-200 bg-slate-50/50 hover:border-slate-300 hover:bg-slate-50'
+                }`}
+              >
+                {/* Card Header */}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-lg bg-indigo-600 text-white text-xs font-bold flex items-center justify-center shadow-xs">
+                      {index + 1}
+                    </span>
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-900 leading-tight">
+                        {item.label}
+                      </h4>
+                      <span className="text-[10px] font-medium text-slate-500">
+                        {item.type === 'DOUBLE_FRAME' && 'Double Box Frame'}
+                        {item.type === 'BOX_FRAME' && 'Single Box Frame'}
+                        {item.type === 'HORIZONTAL_SLAT' && 'Horizontal Slat/Batten'}
+                        {item.type === 'VERTICAL_SLAT' && 'Vertical Slat/Batten'}
+                        {item.type === 'CUSTOM_RUN' && 'Custom Linear Run'}
+                      </span>
+                    </div>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 text-[10px] font-bold">
+                    × {item.quantity} {item.quantity === 1 ? 'qty' : 'sets'}
+                  </span>
+                </div>
+
+                {/* Scaled 2D Elevation View for this Design */}
+                <div className="h-44 w-full bg-slate-900 rounded-lg p-3 relative flex items-center justify-center overflow-hidden shadow-inner my-2">
+                  {/* Subtle Grid Background */}
+                  <div 
+                    className="absolute inset-0 opacity-15"
+                    style={{
+                      backgroundImage: 'radial-gradient(#94a3b8 1px, transparent 1px)',
+                      backgroundSize: '12px 12px'
+                    }}
+                  />
+
+                  {/* Render Double Frame */}
+                  {item.type === 'DOUBLE_FRAME' && (
+                    <div className="relative flex items-center justify-center max-h-36 max-w-[85%]">
+                      {/* Outer Frame Box */}
+                      <div 
+                        className="border-2 border-amber-400 bg-amber-500/10 rounded-xs flex items-center justify-center p-3 shadow-md transition-all"
+                        style={{
+                          width: `${Math.min(180, Math.max(80, (w / 2000) * 160))}px`,
+                          height: `${Math.min(130, Math.max(60, (h / 2000) * 120))}px`,
+                        }}
+                      >
+                        {/* Inner Frame Box */}
+                        <div 
+                          className="w-full h-full border border-sky-300 bg-sky-400/20 rounded-xs flex items-center justify-center"
+                        >
+                          <span className="text-[9px] font-mono text-slate-300 font-semibold text-center leading-none px-1">
+                            {w} × {h}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Render Single Box Frame */}
+                  {item.type === 'BOX_FRAME' && (
+                    <div 
+                      className="border-2 border-indigo-400 bg-indigo-500/15 rounded-xs flex items-center justify-center shadow-md transition-all"
+                      style={{
+                        width: `${Math.min(180, Math.max(80, (w / 2000) * 160))}px`,
+                        height: `${Math.min(130, Math.max(60, (h / 2000) * 120))}px`,
+                      }}
+                    >
+                      <span className="text-[10px] font-mono text-slate-200 font-bold">
+                        {w} × {h} mm
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Render Horizontal Slat */}
+                  {item.type === 'HORIZONTAL_SLAT' && (
+                    <div className="w-full px-4 flex flex-col items-center gap-2">
+                      <div className="w-full h-3 bg-emerald-400 rounded-xs relative shadow flex items-center justify-center">
+                        {w > 2400 && (
+                          <div 
+                            className="absolute top-0 bottom-0 w-0.5 bg-rose-500" 
+                            style={{ left: `${(2400 / w) * 100}%` }}
+                            title="2400mm Joint Location"
+                          />
+                        )}
+                      </div>
+                      <span className="text-[10px] font-mono text-emerald-300 font-semibold">
+                        Length: {w || h} mm {w > 2400 && '(Jointed at 2400mm)'}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Render Vertical Slat */}
+                  {item.type === 'VERTICAL_SLAT' && (
+                    <div className="h-full py-2 flex flex-col items-center justify-center gap-1">
+                      <div className="w-3 h-28 bg-emerald-400 rounded-xs relative shadow flex items-center justify-center">
+                        {h > 2400 && (
+                          <div 
+                            className="absolute left-0 right-0 h-0.5 bg-rose-500" 
+                            style={{ top: `${(2400 / h) * 100}%` }}
+                            title="2400mm Joint Location"
+                          />
+                        )}
+                      </div>
+                      <span className="text-[10px] font-mono text-emerald-300 font-semibold">
+                        {h || w} mm
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Render Custom Run */}
+                  {item.type === 'CUSTOM_RUN' && (
+                    <div className="w-full px-4 flex flex-col items-center gap-2">
+                      <div className="w-full h-2.5 bg-purple-400 rounded-xs shadow" />
+                      <span className="text-[10px] font-mono text-purple-300 font-semibold">
+                        {w || h} mm Linear Run
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Profile Spec Badges */}
+                <div className="pt-2 flex flex-wrap gap-1.5 text-[10px]">
+                  {item.type === 'DOUBLE_FRAME' ? (
+                    <>
+                      <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-medium">
+                        Outer: {outerProf.name}
+                      </span>
+                      <span className="px-2 py-0.5 rounded bg-sky-50 text-sky-800 border border-sky-200 font-medium">
+                        Inner: {innerProf.name}
+                      </span>
+                      <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-mono">
+                        Gap: {offset}mm
+                      </span>
+                    </>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-200 font-medium">
+                      Profile: {singleProf.name}
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* PVC Moulding Manual Modal */}
+      <MoldingManualModal
+        isOpen={showManualModal}
+        onClose={() => setShowManualModal(false)}
+      />
     </div>
   );
 };
+
