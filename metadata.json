@@ -1,0 +1,6 @@
+{
+  "name": "Interior Calculators",
+  "description": "Accurate interior quantity estimators including False Ceiling, Aluminium Strip, PVC Moulding, and Louver Panels with cross-section material optimization.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
