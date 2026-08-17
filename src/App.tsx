@@ -8,7 +8,9 @@ import {
   PrimaryCeilingInputs, 
   ExtraItem, 
   ExtraCategory,
-  AluminiumStripItem,
+  ReductionItem,
+  ReductionCategory,
+  AluminiumStripType,
   MoldingFrameItem,
   LouverProduct,
   ActiveCalculatorTab
@@ -17,9 +19,10 @@ import {
   DEFAULT_PRIMARY_INPUTS, 
   EMPTY_PRIMARY_INPUTS,
   createNewExtraItem, 
+  createNewReductionItem,
   calculateCeilingWithExtras 
 } from './utils/calculator';
-import { DEFAULT_ALUMINIUM_ITEMS } from './utils/aluminiumCalculator';
+import { DEFAULT_ALUMINIUM_TYPES } from './utils/aluminiumCalculator';
 import { DEFAULT_MOLDING_ITEMS } from './utils/moldingCalculator';
 import { DEFAULT_LOUVER_PRODUCTS } from './utils/louverCalculator';
 
@@ -28,11 +31,17 @@ import { MinimalCeilingCalculator } from './components/MinimalCeilingCalculator'
 import { AluminiumStripCalculator } from './components/AluminiumStripCalculator';
 import { MoldingCalculator } from './components/MoldingCalculator';
 import { LouverPanelCalculator } from './components/LouverPanelCalculator';
+import { CeilingManualModal } from './components/CeilingManualModal';
+import { AluminiumManualModal } from './components/AluminiumManualModal';
+import { MoldingManualModal } from './components/MoldingManualModal';
+import { LouverManualModal } from './components/LouverManualModal';
+import { LivinLogo } from './components/LivinLogo';
 
 const STORAGE_ACTIVE_TAB_KEY = 'interior_calc_active_tab_v2';
-const STORAGE_PRIMARY_KEY = 'fc_primary_ceiling_v8';
-const STORAGE_EXTRAS_KEY = 'fc_extras_ceiling_v8';
-const STORAGE_ALUMINIUM_KEY = 'interior_calc_aluminium_v2';
+const STORAGE_PRIMARY_KEY = 'fc_primary_ceiling_v9';
+const STORAGE_EXTRAS_KEY = 'fc_extras_ceiling_v9';
+const STORAGE_REDUCTIONS_KEY = 'fc_reductions_ceiling_v9';
+const STORAGE_ALUMINIUM_TYPES_KEY = 'interior_calc_aluminium_types_v3';
 const STORAGE_MOLDING_ITEMS_KEY = 'interior_calc_molding_items_v2';
 const STORAGE_LOUVER_PRODUCTS_KEY = 'interior_calc_louver_products_v2';
 
@@ -50,7 +59,7 @@ export default function App() {
     return 'CEILING';
   });
 
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [activeManual, setActiveManual] = useState<ActiveCalculatorTab | null>(null);
 
   useEffect(() => {
     try {
@@ -81,6 +90,16 @@ export default function App() {
     return [];
   });
 
+  const [reductions, setReductions] = useState<ReductionItem[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_REDUCTIONS_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // ignore
+    }
+    return [];
+  });
+
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_PRIMARY_KEY, JSON.stringify(primaryInputs));
@@ -97,25 +116,33 @@ export default function App() {
     }
   }, [extraItems]);
 
-  const ceilingResults = useMemo(() => {
-    return calculateCeilingWithExtras(primaryInputs, extraItems);
-  }, [primaryInputs, extraItems]);
-
-  // 2. Aluminium Strip State
-  const [aluminiumItems, setAluminiumItems] = useState<AluminiumStripItem[]>(() => {
+  useEffect(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_ALUMINIUM_KEY);
+      localStorage.setItem(STORAGE_REDUCTIONS_KEY, JSON.stringify(reductions));
+    } catch {
+      // ignore
+    }
+  }, [reductions]);
+
+  const ceilingResults = useMemo(() => {
+    return calculateCeilingWithExtras(primaryInputs, extraItems, reductions);
+  }, [primaryInputs, extraItems, reductions]);
+
+  // 2. Aluminium Strip State (Strip Types 1, 2, 3...)
+  const [aluminiumTypes, setAluminiumTypes] = useState<AluminiumStripType[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_ALUMINIUM_TYPES_KEY);
       if (saved) return JSON.parse(saved);
     } catch {
       // ignore
     }
-    return DEFAULT_ALUMINIUM_ITEMS;
+    return DEFAULT_ALUMINIUM_TYPES;
   });
 
-  const handleSaveAluminium = (items: AluminiumStripItem[]) => {
-    setAluminiumItems(items);
+  const handleSaveAluminiumTypes = (types: AluminiumStripType[]) => {
+    setAluminiumTypes(types);
     try {
-      localStorage.setItem(STORAGE_ALUMINIUM_KEY, JSON.stringify(items));
+      localStorage.setItem(STORAGE_ALUMINIUM_TYPES_KEY, JSON.stringify(types));
     } catch {
       // ignore
     }
@@ -141,7 +168,7 @@ export default function App() {
     }
   };
 
-  // 4. Louver Panel State (Multi-Product Hierarchy)
+  // 4. Louver Panel State (Multi-Type Hierarchy)
   const [louverProducts, setLouverProducts] = useState<LouverProduct[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_LOUVER_PRODUCTS_KEY);
@@ -187,17 +214,6 @@ export default function App() {
     setExtraItems((prev) => prev.filter((item) => item.id !== id));
   };
 
-  const handleResetCeiling = () => {
-    setPrimaryInputs({ ...EMPTY_PRIMARY_INPUTS });
-    setExtraItems([]);
-    try {
-      localStorage.setItem(STORAGE_PRIMARY_KEY, JSON.stringify(EMPTY_PRIMARY_INPUTS));
-      localStorage.setItem(STORAGE_EXTRAS_KEY, JSON.stringify([]));
-    } catch {
-      // ignore
-    }
-  };
-
   const handleClearExtras = () => {
     setExtraItems([]);
     try {
@@ -207,16 +223,54 @@ export default function App() {
     }
   };
 
+  const handleAddReduction = (type: ReductionCategory = 'EXEMPTED_AREA') => {
+    const newItem = createNewReductionItem(type);
+    setReductions((prev) => [...prev, newItem]);
+  };
+
+  const handleUpdateReduction = (id: string, updated: Partial<ReductionItem>) => {
+    setReductions((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, ...updated } : item))
+    );
+  };
+
+  const handleRemoveReduction = (id: string) => {
+    setReductions((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const handleClearReductions = () => {
+    setReductions([]);
+    try {
+      localStorage.setItem(STORAGE_REDUCTIONS_KEY, JSON.stringify([]));
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleResetCeiling = () => {
+    setPrimaryInputs({ ...EMPTY_PRIMARY_INPUTS });
+    setExtraItems([]);
+    setReductions([]);
+    try {
+      localStorage.setItem(STORAGE_PRIMARY_KEY, JSON.stringify(EMPTY_PRIMARY_INPUTS));
+      localStorage.setItem(STORAGE_EXTRAS_KEY, JSON.stringify([]));
+      localStorage.setItem(STORAGE_REDUCTIONS_KEY, JSON.stringify([]));
+    } catch {
+      // ignore
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900 font-sans selection:bg-slate-300 py-6 px-3 sm:px-6">
       <div className="w-full max-w-7xl mx-auto">
-        {/* Top Navigation Menu with 3-line Hamburger on Top-Left */}
+        {/* Top Navigation Bar with 3-line hamburger menu on left and Manual on right */}
         <NavigationMenu
           activeTab={activeTab}
           onSelectTab={(tab) => {
             setActiveTab(tab);
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
+          onOpenManual={() => setActiveManual(activeTab)}
         />
 
         {/* Main Content Area: Active Calculator */}
@@ -225,20 +279,27 @@ export default function App() {
             <MinimalCeilingCalculator
               primaryInputs={primaryInputs}
               extraItems={extraItems}
+              reductions={reductions}
               results={ceilingResults}
               onChangePrimary={handleChangePrimary}
               onAddExtra={handleAddExtra}
               onUpdateExtra={handleUpdateExtra}
               onRemoveExtra={handleRemoveExtra}
+              onAddReduction={handleAddReduction}
+              onUpdateReduction={handleUpdateReduction}
+              onRemoveReduction={handleRemoveReduction}
               onResetAll={handleResetCeiling}
               onClearExtras={handleClearExtras}
+              onClearReductions={handleClearReductions}
+              onOpenManual={() => setActiveManual('CEILING')}
             />
           )}
 
           {activeTab === 'ALUMINIUM' && (
             <AluminiumStripCalculator
-              initialItems={aluminiumItems}
-              onSaveItems={handleSaveAluminium}
+              initialTypes={aluminiumTypes}
+              onSaveTypes={handleSaveAluminiumTypes}
+              onOpenManual={() => setActiveManual('ALUMINIUM')}
             />
           )}
 
@@ -246,6 +307,7 @@ export default function App() {
             <MoldingCalculator
               initialItems={moldingItems}
               onSave={handleSaveMolding}
+              onOpenManual={() => setActiveManual('MOLDING')}
             />
           )}
 
@@ -253,19 +315,54 @@ export default function App() {
             <LouverPanelCalculator
               initialTypes={louverProducts}
               onSave={handleSaveLouver}
+              onOpenManual={() => setActiveManual('LOUVER')}
             />
           )}
         </main>
       </div>
 
+      {/* Global Manual Modals when triggered from navigation bar */}
+      <CeilingManualModal
+        isOpen={activeManual === 'CEILING'}
+        onClose={() => setActiveManual(null)}
+      />
+
+      <AluminiumManualModal
+        isOpen={activeManual === 'ALUMINIUM'}
+        onClose={() => setActiveManual(null)}
+        onLoadExample={(examplePlacements) => {
+          handleSaveAluminiumTypes([
+            {
+              id: `alt_${Date.now()}_1`,
+              name: '3-Door Wardrobe T-Profile (Example)',
+              placements: examplePlacements,
+            },
+          ]);
+        }}
+      />
+
+      <MoldingManualModal
+        isOpen={activeManual === 'MOLDING'}
+        onClose={() => setActiveManual(null)}
+      />
+
+      <LouverManualModal
+        isOpen={activeManual === 'LOUVER'}
+        onClose={() => setActiveManual(null)}
+      />
+
       {/* Footer */}
-      <footer className="mt-8 py-4 text-center text-xs text-slate-500 border-t border-slate-200/80 w-full max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-        <p>Livin Material Calculator • 300 mm = 1 ft Standard Conversion</p>
-        <p className="text-[11px] text-slate-400">
-          False Ceiling • Aluminium Strip • PVC Moulding • Louver Panels
+      <footer className="mt-10 py-5 text-xs text-slate-500 border-t border-slate-200/80 w-full max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <LivinLogo size={20} />
+          <p className="font-semibold text-slate-700">
+            Livin Interiors Material Calculator <span className="font-normal text-slate-500">• 300 mm = 1 ft Standard</span>
+          </p>
+        </div>
+        <p className="text-[11px] text-slate-500 font-medium">
+          This calculator is designed and developed inhouse by the Livin R&D team
         </p>
       </footer>
-
     </div>
   );
 }

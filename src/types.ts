@@ -3,23 +3,35 @@
 // ==========================================
 export type CeilingCategory = 'PERIPHERAL' | 'ISLAND' | 'L_SHAPE';
 export type PeripheralSubOption = 'ONLY_PERIPHERAL_DROP' | 'FULL_AREA_COVERED';
+export type CoveOption = 'WITH_COVE' | 'WITHOUT_COVE';
 export type IslandSubOption = 'WITH_COVE' | 'WITHOUT_COVE';
 export type EdgeSubOption = 'WITH_COVE' | 'WITHOUT_COVE';
 export type ExtraCategory = 'ISLAND' | 'EDGE' | 'EXTRA_AREA';
+export type ReductionCategory = 'EXEMPTED_AREA' | 'EDGE';
 
 export interface PrimaryCeilingInputs {
   category: CeilingCategory;
   peripheralSubOption: PeripheralSubOption;
+  peripheralCoveOption: CoveOption;
   islandSubOption: IslandSubOption;
+  lShapeCoveOption: CoveOption;
   lengthMm: number;
   widthMm: number;
-  peripheralWidthMm: number;
+  peripheralWidthMm: number; // Drop width for Peripheral & L-Shape
 }
 
 export interface ExtraItem {
   id: string;
   category: ExtraCategory;
   islandSubOption: IslandSubOption;
+  edgeSubOption: EdgeSubOption;
+  lengthMm: number;
+  widthMm: number;
+}
+
+export interface ReductionItem {
+  id: string;
+  category: ReductionCategory; // 'EXEMPTED_AREA' | 'EDGE'
   edgeSubOption: EdgeSubOption;
   lengthMm: number;
   widthMm: number;
@@ -34,30 +46,44 @@ export interface ItemBreakdown {
   edgeMultiplier: number;
   edgeSqft: number;
   fcSqft: number;
+  coveMtr: number;
   coveRft: number;
   adaptors: number;
+  isReduction?: boolean;
   notes?: string;
 }
 
 export interface CeilingCalculationResults {
   totalSurfaceAreaSqft: number;
+  totalCoveMtr: number;
   totalCoveRft: number;
   totalEdgeSqft: number;
+  totalReductionSqft: number;
   totalFcSqft: number;
+  totalStripLightMtr: number;
   totalStripLightRft: number;
   totalAdaptors: number;
   primaryBreakdown: ItemBreakdown;
   extrasBreakdown: ItemBreakdown[];
+  reductionsBreakdown: ItemBreakdown[];
 }
 
 // ==========================================
 // 2. ALUMINIUM STRIP CALCULATOR TYPES
 // ==========================================
-export interface AluminiumStripItem {
+export interface AluminiumStripPlacement {
   id: string;
-  label: string; // e.g. "Module 1", "Module 2"
+  label: string; // e.g. "Door 1 & 2 Horizontal", "Door 3 Vertical"
   lengthMm: number;
   quantity: number;
+}
+
+export type AluminiumStripItem = AluminiumStripPlacement;
+
+export interface AluminiumStripType {
+  id: string;
+  name: string; // e.g. "Strip Type 1", "Strip Type 2"
+  placements: AluminiumStripPlacement[];
 }
 
 export interface CutPiece {
@@ -75,6 +101,22 @@ export interface StockBar {
   cuts: CutPiece[];
 }
 
+export interface AluminiumTypeResult {
+  typeId: string;
+  name: string;
+  totalPieces: number;
+  totalDesignLengthMm: number;
+  totalDesignLengthFt: number;
+  barsRequired: number;
+  totalStockPurchasedMm: number;
+  totalStockPurchasedFt: number;
+  totalWastageMm: number;
+  totalWastageFt: number;
+  wastagePercentage: number;
+  stockBars: StockBar[];
+  oversizedPieces: { label: string; lengthMm: number; count: number }[];
+}
+
 export interface AluminiumCalculationResults {
   stockLengthMm: number; // 3000 mm (10 ft)
   stockLengthFt: number; // 10 ft
@@ -87,7 +129,8 @@ export interface AluminiumCalculationResults {
   totalWastageMm: number;
   totalWastageFt: number;
   wastagePercentage: number;
-  stockBars: StockBar[];
+  typesResults: AluminiumTypeResult[];
+  stockBars: StockBar[]; // Aggregate stock bars across all types
   oversizedPieces: { label: string; lengthMm: number; count: number }[];
 }
 
